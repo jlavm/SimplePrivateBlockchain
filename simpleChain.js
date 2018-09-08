@@ -173,6 +173,7 @@ class Blockchain {
             this.validateBlock(height).then((result) => {
                 console.log("validateBlock: " + result);
                 if (!result) {
+                    console.log("validateBlockInChain no valid");
                     resolve(1);
                 } else {
                     // get current Block
@@ -214,6 +215,8 @@ class Blockchain {
                     promiseArray.push(this.validateBlockInChain(i));
                 }
                 Promise.all(promiseArray).then(values => {
+                    console.log("Then promise");
+                    console.log(values);
                     if (values > 0) {
                         console.log('Block errors = ' + values);
                         resolve('Block errors = ' + values);
