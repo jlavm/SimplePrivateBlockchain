@@ -6,6 +6,8 @@ const SHA256 = require('crypto-js/sha256');
 const level = require('level');
 const chainDB = './chaindata';
 const db = level(chainDB);
+// function for adding two numbers. Easy!
+const addArray = (a, b) => a + b;
 
 /* ===== Block Class ==============================
 |  Class with a constructor for block          |
@@ -101,7 +103,6 @@ class Blockchain {
                     reject("BlockHeight Could not retrieve chain length");
                 })
                 .on('close', function() {
-                    console.log("BlockHeight getblock return value " + i);
                     resolve(i);
                 });
         });
@@ -168,34 +169,38 @@ class Blockchain {
         });
     }
 
-    validateBlockInChain(height) {
+    validateBlockInChain(height, lastIteration) {
         return new Promise((resolve, reject) => {
             this.validateBlock(height).then((result) => {
-                console.log("validateBlock: " + result);
+                //console.log("validateBlock: " + result);
                 if (!result) {
                     console.log("validateBlockInChain no valid");
                     resolve(1);
                 } else {
                     // get current Block
-                    this.getBlock(height).then((block) => {
-                        let blockHash = block.hash;
-                        this.getBlock(height + 1).then((blockNext) => {
-                            let previousHash = blockNext.previousBlockHash;
-                            if (blockHash !== previousHash) {
-                                console.log("validateBlockInChain no valid");
-                                resolve(1);
-                            } else {
-                                console.log("validateBlockInChain valid");
-                                resolve(0);
-                            }
+                    if (height < lastIteration) {
+                        this.getBlock(height).then((block) => {
+                            let blockHash = block.hash;
+                            this.getBlock(height + 1).then((blockNext) => {
+                                let previousHash = blockNext.previousBlockHash;
+                                if (blockHash !== previousHash) {
+                                    console.log("validateBlockInChain no valid");
+                                    resolve(1);
+                                } else {
+                                    console.log("validateBlockInChain valid");
+                                    resolve(0);
+                                }
+                            }).catch((err) => {
+                                console.log("Error in getNextBlock" + err);
+                                reject(err);
+                            });
                         }).catch((err) => {
-                            console.log("Error in getNextBlock" + err);
+                            console.log("Error in getBlock" + err);
                             reject(err);
                         });
-                    }).catch((err) => {
-                        console.log("Error in getBlock" + err);
-                        reject(err);
-                    });
+                    } else {
+                        resolve(0);
+                    }
                 }
             }).catch((err) => {
                 console.log("Error validating block: " + err);
@@ -209,17 +214,19 @@ class Blockchain {
         return new Promise((resolve, reject) => {
             let counter = 0;
             this.getBlockHeight().then((height) => {
-                for (var i = 0; i < height - 1; i++) {
+                var lastIteration = height - 1;
+                var promiseArray = [];
+                for (var i = 0; i < height; i++) {
                     // validate block
-                    var promiseArray = [];
-                    promiseArray.push(this.validateBlockInChain(i));
+                    promiseArray.push(this.validateBlockInChain(i, lastIteration));
                 }
                 Promise.all(promiseArray).then(values => {
-                    console.log("Then promise");
                     console.log(values);
-                    if (values > 0) {
-                        console.log('Block errors = ' + values);
-                        resolve('Block errors = ' + values);
+                    counter = values.reduce(addArray);
+                    if (counter > 0) {
+                        console.log('Block errors = ' + counter);
+                        console.log('Invalid chain');
+                        resolve('Block errors = ' + counter);
                     } else {
                         console.log('No errors detected');
                         resolve('No errors detected');
@@ -244,7 +251,6 @@ class Blockchain {
                     console.log('getLevelData Not found!', err);
                     reject(err);
                 };
-                //console.log('result getLevelData Value = ' + value);
                 resolve(value);
             })
         });
@@ -252,7 +258,6 @@ class Blockchain {
 
     // Add data to levelDB with value
     addDataToLevelDB(height, newBlock) {
-        //console.log("invoking addDataToLevelDB")
         return new Promise(function(resolve, reject) {
             let i = 0;
             db.createReadStream().on('data', function(data) {
@@ -260,7 +265,6 @@ class Blockchain {
             }).on('error', function(err) {
                 reject('Unable to read data stream!', err);
             }).on('close', function() {
-                //console.log('Block #' + height + " to be added");
                 addLevelDBData(height, JSON.stringify(newBlock)).then((result) => {
                     console.log("Block added");
                     resolve(result)
@@ -275,7 +279,6 @@ class Blockchain {
 
 // Add data to levelDB with key/value pair
 function addLevelDBData(key, value) {
-    //console.log("invoking addLevelDBData with value" + value)
     return new Promise((resolve, reject) => {
         db.put(key, value, function(err) {
             if (err) {
@@ -287,14 +290,12 @@ function addLevelDBData(key, value) {
     });
 }
 
-let blockChain = new Blockchain();
+let blockchain = new Blockchain();
 
 (function theLoop(i) {
     setTimeout(function() {
         let blockTest = new Block("Test Block - " + (i + 1));
-        blockChain.addBlock(blockTest).then((result) => {
-            //console.log("LOOP RESULT");
-            //console.log(result);
+        blockchain.addBlock(blockTest).then((result) => {
             i++;
             if (i < 10) theLoop(i);
         }).catch(error => {

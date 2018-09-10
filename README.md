@@ -36,12 +36,12 @@ blockchain.validateChain();
 ```
 7: Induce errors by changing block data
 ```
-let inducedErrorBlocks = [2,4,7];
+let inducedErrorBlocks = [2,4,7,10];
 for (var i = 0; i < inducedErrorBlocks.length; i++) {
   blockchain.modifyBlock(inducedErrorBlocks[i], "induced chain error")
 }
 ```
-8: Validate blockchain. The chain should now fail with blocks 2,4, and 7.
+8: Validate blockchain. The chain should now fail with blocks 2,4,7 and 10.
 ```
 blockchain.validateChain();
 ```
