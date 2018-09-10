@@ -20,8 +20,6 @@ let blockchain = new Blockchain();
     setTimeout(function() {
         let blockTest = new Block("Test Block - " + (i + 1));
         blockchain.addBlock(blockTest).then((result) => {
-            //console.log("LOOP RESULT");
-            //console.log(result);
             i++;
             if (i < 10) theLoop(i);
         }).catch(error => {

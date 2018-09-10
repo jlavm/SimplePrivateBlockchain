@@ -2,11 +2,10 @@
 |  Learn more: Crypto-js: https://github.com/brix/crypto-js  |
 |  =========================================================*/
 const SHA256 = require('crypto-js/sha256');
-//const leveldb = require('./levelSandbox.js');
 const level = require('level');
 const chainDB = './chaindata';
 const db = level(chainDB);
-// function for adding two numbers. Easy!
+// function for adding two numbers.
 const addArray = (a, b) => a + b;
 
 /* ===== Block Class ==============================
@@ -36,13 +35,11 @@ class Blockchain {
     addBlock(newBlock) {
         return new Promise((resolve, reject) => {
             this.getBlockHeight().then((height) => {
-                    console.log("result addBlock getBlockHeight() " + height);
                     newBlock.height = height;
                     // UTC timestamp
                     newBlock.time = new Date().getTime().toString().slice(0, -3);
                     // previous block hash
                     if (newBlock.height > 0) {
-                        //console.log("addBlock getBlock:" + height);
                         this.getBlock(height - 1).then((block) => {
                             console.log('adding new block with previous hash of block: ' + JSON.stringify(block));
                             newBlock.previousBlockHash = block.hash;
@@ -79,7 +76,6 @@ class Blockchain {
                 genesisBlock.height = 0;
                 genesisBlock.time = new Date().getTime().toString().slice(0, -3);
                 genesisBlock.hash = SHA256(JSON.stringify(genesisBlock)).toString();
-                console.log("Genesis block to be added" + JSON.stringify(genesisBlock));
                 this.addDataToLevelDB(0, genesisBlock).then((result) => {
                     console.log("Genesis Result: " + result);
                 }).catch(error => {
@@ -116,7 +112,6 @@ class Blockchain {
                     console.log('getBlock Not found!', err);
                     reject(err);
                 };
-                //console.log('result getBlock Value = ' + value);
                 // return object as a single string
                 resolve(JSON.parse(value));
             });
@@ -172,7 +167,7 @@ class Blockchain {
     validateBlockInChain(height, lastIteration) {
         return new Promise((resolve, reject) => {
             this.validateBlock(height).then((result) => {
-                //console.log("validateBlock: " + result);
+                console.log("validateBlock: " + result);
                 if (!result) {
                     console.log("validateBlockInChain no valid");
                     resolve(1);
@@ -221,6 +216,7 @@ class Blockchain {
                     promiseArray.push(this.validateBlockInChain(i, lastIteration));
                 }
                 Promise.all(promiseArray).then(values => {
+                    console.log("Then Promise all");
                     console.log(values);
                     counter = values.reduce(addArray);
                     if (counter > 0) {
